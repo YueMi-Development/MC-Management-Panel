@@ -36,25 +36,11 @@ public class BanCommand extends PunishmentCommand {
     }
 
     @Override
-    protected void onPunishmentSuccess(CommandSender sender, String targetName, UUID targetId, Set<String> flags) {
+    protected boolean shouldWipeBefore(Set<String> flags) {
         boolean autoWipe = plugin.getConfig().getBoolean("wipe.auto-wipe-on-ban", false);
-        boolean shouldWipe = false;
-        
-        if (flags.contains("--wipe")) {
-            shouldWipe = true;
-        } else if (!flags.contains("--nowipe") && autoWipe) {
-            shouldWipe = true;
-        }
-
-        if (shouldWipe) {
-            CommandHelper.sendMsg(sender, "Auto-wiping " + targetName + "...", NamedTextColor.YELLOW);
-            plugin.getWipeServiceImpl().wipe(targetId)
-                    .thenAccept(backupId -> CommandHelper.sendMsg(sender, "Successfully wiped " + targetName + ". Backup created: " + backupId, NamedTextColor.GREEN))
-                    .exceptionally(t -> {
-                        CommandHelper.sendMsg(sender, "Failed to auto-wipe player " + targetName + ": " + t.getCause().getMessage(), NamedTextColor.RED);
-                        return null;
-                    });
-        }
+        if (flags.contains("--wipe")) return true;
+        if (flags.contains("--nowipe")) return false;
+        return autoWipe;
     }
 
     @Override

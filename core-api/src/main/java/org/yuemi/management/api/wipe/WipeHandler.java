@@ -33,4 +33,12 @@ public interface WipeHandler {
      * @return a future completing when the unwipe/restore is finished
      */
     @NotNull CompletableFuture<Void> handleUnwipe(@NotNull UUID playerId, @NotNull String backupId);
+
+    /**
+     * Optional synchronous hook called on the main thread right before the player is kicked.
+     * Useful for clearing in-memory data (like active inventory) to ensure it is saved empty.
+     *
+     * @param playerId the UUID of the player to wipe
+     */
+    default void preWipeSync(@NotNull UUID playerId) {}
 }

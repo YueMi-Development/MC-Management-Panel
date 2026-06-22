@@ -55,8 +55,18 @@ public final class WipeServiceImpl implements WipeService {
 
         // Ensure player is kicked on the main thread first to avoid save overwriting
         Bukkit.getScheduler().runTask(plugin, () -> {
+            // Run synchronous pre-wipe hooks first (to clear live inventory)
+            for (WipeHandler handler : handlers) {
+                try {
+                    handler.preWipeSync(playerId);
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Error in preWipeSync for " + handler.getName() + ": " + e.getMessage());
+                }
+            }
+
             Player player = Bukkit.getPlayer(playerId);
-            if (player != null) {
+            boolean wasOnline = player != null;
+            if (wasOnline) {
                 player.kick(net.kyori.adventure.text.Component.text("Your player profile is being wiped."));
             }
 
@@ -69,18 +79,24 @@ public final class WipeServiceImpl implements WipeService {
                 }
             }
 
-            // Run handlers asynchronously
-            List<CompletableFuture<Void>> futures = new ArrayList<>();
-            for (WipeHandler handler : handlers) {
-                futures.add(handler.handleWipe(playerId, backupId));
-            }
+            // Delay the actual wipe by 20 ticks (1 second) if the player was online.
+            // This ensures Bukkit has fully processed the kick, fired PlayerQuitEvent,
+            // and saved the playerdata.dat file BEFORE we try to delete/backup it.
+            long delay = wasOnline ? 20L : 0L;
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                // Run handlers asynchronously
+                List<CompletableFuture<Void>> futures = new ArrayList<>();
+                for (WipeHandler handler : handlers) {
+                    futures.add(handler.handleWipe(playerId, backupId));
+                }
 
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                    .thenRun(() -> future.complete(backupId))
-                    .exceptionally(throwable -> {
-                        future.completeExceptionally(throwable);
-                        return null;
-                    });
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                        .thenRun(() -> future.complete(backupId))
+                        .exceptionally(throwable -> {
+                            future.completeExceptionally(throwable);
+                            return null;
+                        });
+            }, delay);
         });
 
         return future;

@@ -48,6 +48,19 @@ public final class VanillaInventoryWipeHandler implements WipeHandler {
     }
 
     @Override
+    public void preWipeSync(@NotNull UUID playerId) {
+        org.bukkit.entity.Player p = Bukkit.getPlayer(playerId);
+        if (p != null) {
+            p.getInventory().clear();
+            p.getEnderChest().clear();
+            p.setExp(0);
+            p.setLevel(0);
+            p.saveData();
+            plugin.getLogger().info("Synchronously cleared live inventory for " + p.getName());
+        }
+    }
+
+    @Override
     public @NotNull CompletableFuture<Void> handleWipe(@NotNull UUID playerId, @NotNull String backupId) {
         return CompletableFuture.runAsync(() -> {
             File worldFolder = getDefaultWorldFolder();
@@ -61,8 +74,14 @@ public final class VanillaInventoryWipeHandler implements WipeHandler {
                 }
 
                 // Delete file (Note: this deletes entire playerdata including location/health)
-                if (playerdataFile.exists() && !playerdataFile.delete()) {
-                    plugin.getLogger().warning("Could not delete playerdata file for: " + playerId);
+                if (playerdataFile.exists()) {
+                    if (playerdataFile.delete()) {
+                        plugin.getLogger().info("Successfully deleted playerdata.dat for " + playerId);
+                    } else {
+                        plugin.getLogger().warning("Could not delete playerdata.dat file for: " + playerId + ". It may be locked or in use.");
+                    }
+                } else {
+                    plugin.getLogger().info("No playerdata.dat file found for " + playerId + " to delete.");
                 }
             } catch (IOException e) {
                 plugin.getLogger().severe("Failed to backup/wipe vanilla inventory for " + playerId + ": " + e.getMessage());

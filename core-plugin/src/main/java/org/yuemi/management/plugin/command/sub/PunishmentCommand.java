@@ -31,7 +31,11 @@ public abstract class PunishmentCommand implements SubCommand {
     );
 
     protected void onPunishmentSuccess(CommandSender sender, String targetName, UUID targetId, Set<String> flags) {
-        // Can be overridden (e.g. for ban's auto-wipe)
+        // Can be overridden (e.g. for post-punishment logic)
+    }
+
+    protected boolean shouldWipeBefore(Set<String> flags) {
+        return false;
     }
 
     @Override
@@ -87,20 +91,41 @@ public abstract class PunishmentCommand implements SubCommand {
                 reason = "No reason provided";
             }
 
-            executePunishment(uuid, reason, duration, sourceName)
-                    .thenAccept(result -> {
-                        if (result.success()) {
-                            CommandHelper.sendMsg(sender, result.message(), NamedTextColor.GREEN);
-                            onPunishmentSuccess(sender, targetName, uuid, flags);
-                        } else {
-                            CommandHelper.sendMsg(sender, "Failed: " + result.message(), NamedTextColor.RED);
-                        }
-                    })
-                    .exceptionally(t -> {
-                        CommandHelper.sendMsg(sender, "Error processing action: " + t.getMessage(), NamedTextColor.RED);
-                        return null;
-                    });
+            final String finalReason = reason;
+            final Duration finalDuration = duration;
+
+            if (shouldWipeBefore(flags)) {
+                CommandHelper.sendMsg(sender, "Auto-wiping " + targetName + "...", NamedTextColor.YELLOW);
+                plugin.getWipeServiceImpl().wipe(uuid)
+                        .thenAccept(backupId -> {
+                            CommandHelper.sendMsg(sender, "Successfully wiped " + targetName + ". Backup created: " + backupId, NamedTextColor.GREEN);
+                            doPunishment(uuid, finalReason, finalDuration, sourceName, sender, targetName, flags);
+                        })
+                        .exceptionally(t -> {
+                            CommandHelper.sendMsg(sender, "Failed to auto-wipe player " + targetName + ": " + t.getCause().getMessage(), NamedTextColor.RED);
+                            doPunishment(uuid, finalReason, finalDuration, sourceName, sender, targetName, flags);
+                            return null;
+                        });
+            } else {
+                doPunishment(uuid, finalReason, finalDuration, sourceName, sender, targetName, flags);
+            }
         });
+    }
+
+    private void doPunishment(UUID targetId, String reason, Duration duration, String sourceName, CommandSender sender, String targetName, Set<String> flags) {
+        executePunishment(targetId, reason, duration, sourceName)
+                .thenAccept(result -> {
+                    if (result.success()) {
+                        CommandHelper.sendMsg(sender, result.message(), NamedTextColor.GREEN);
+                        onPunishmentSuccess(sender, targetName, targetId, flags);
+                    } else {
+                        CommandHelper.sendMsg(sender, "Failed: " + result.message(), NamedTextColor.RED);
+                    }
+                })
+                .exceptionally(t -> {
+                    CommandHelper.sendMsg(sender, "Error processing action: " + t.getMessage(), NamedTextColor.RED);
+                    return null;
+                });
     }
 
     @Override
