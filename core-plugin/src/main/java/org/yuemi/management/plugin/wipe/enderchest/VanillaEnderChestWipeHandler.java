@@ -1,0 +1,110 @@
+package org.yuemi.management.plugin.wipe.enderchest;
+
+import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.jetbrains.annotations.NotNull;
+import org.yuemi.management.api.wipe.WipeHandler;
+import org.yuemi.management.plugin.ManagementPanelPlugin;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+
+public final class VanillaEnderChestWipeHandler implements WipeHandler {
+
+    private final ManagementPanelPlugin plugin;
+
+    public VanillaEnderChestWipeHandler(@NotNull ManagementPanelPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    @Override
+    public @NotNull String getName() {
+        return "vanilla-enderchest";
+    }
+
+    @Override
+    public void preWipeSync(@NotNull UUID playerId) {
+        org.bukkit.entity.Player p = Bukkit.getPlayer(playerId);
+        if (p != null) {
+            p.getEnderChest().clear();
+            p.saveData();
+            plugin.getLogger().info("Synchronously cleared live ender chest for " + p.getName());
+        }
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Void> handleWipe(@NotNull UUID playerId, @NotNull String backupId) {
+        return CompletableFuture.runAsync(() -> {
+            File worldFolder = getDefaultWorldFolder();
+            File playerdataFile = new File(new File(worldFolder, "playerdata"), playerId.toString() + ".dat");
+            File backupDir = plugin.getWipeServiceImpl().getBackupDirectory(playerId, backupId);
+
+            try {
+                // Back up file if backup directory exists
+                // We use a different filename so we don't conflict with VanillaInventoryWipeHandler's backup.
+                if (backupDir.exists()) {
+                    copyFile(playerdataFile, new File(backupDir, "playerdata_enderchest.dat"));
+                }
+
+                // Delete file (Note: in vanilla, inventory and enderchest share the same .dat file,
+                // so this deletes the entire file, which effectively wipes both if both are offline).
+                if (playerdataFile.exists()) {
+                    if (playerdataFile.delete()) {
+                        plugin.getLogger().info("Successfully deleted playerdata.dat for " + playerId + " (EnderChest Wipe)");
+                    } else {
+                        plugin.getLogger().warning("Could not delete playerdata.dat file for: " + playerId + " (EnderChest Wipe)");
+                    }
+                }
+            } catch (IOException e) {
+                plugin.getLogger().severe("Failed to backup/wipe vanilla ender chest for " + playerId + ": " + e.getMessage());
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Void> handleUnwipe(@NotNull UUID playerId, @NotNull String backupId) {
+        return CompletableFuture.runAsync(() -> {
+            File backupDir = plugin.getWipeServiceImpl().getBackupDirectory(playerId, backupId);
+            File backupFile = new File(backupDir, "playerdata_enderchest.dat");
+
+            if (!backupFile.exists()) {
+                return; // Nothing to restore for ender chest
+            }
+
+            File worldFolder = getDefaultWorldFolder();
+            File playerdataFile = new File(new File(worldFolder, "playerdata"), playerId.toString() + ".dat");
+
+            try {
+                copyFile(backupFile, playerdataFile);
+                plugin.getLogger().info("Restored playerdata (ender chest) for " + playerId);
+            } catch (IOException e) {
+                plugin.getLogger().severe("Failed to restore vanilla ender chest for " + playerId + ": " + e.getMessage());
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private File getDefaultWorldFolder() {
+        List<World> worlds = Bukkit.getWorlds();
+        if (worlds.isEmpty()) {
+            return new File(".");
+        }
+        return worlds.get(0).getWorldFolder();
+    }
+
+    private void copyFile(File source, File dest) throws IOException {
+        if (!source.exists()) {
+            return;
+        }
+        if (!dest.getParentFile().exists() && !dest.getParentFile().mkdirs()) {
+            throw new IOException("Failed to create parent directories for: " + dest.getPath());
+        }
+        Files.copy(source.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+    }
+}

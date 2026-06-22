@@ -1,5 +1,6 @@
 package org.yuemi.management.plugin.config;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
@@ -72,19 +73,39 @@ public final class ConfigMigrator {
              if (!oldConfig.contains("wipe.auto-wipe-on-ban")) {
                  newConfig.set("wipe.auto-wipe-on-ban", false);
              }
+             oldVersion = 2;
         }
         
-        if (oldVersion < 3) {
-             plugin.getLogger().info("Migrating to v3: Refactoring wipe handlers to categorical strings.");
-             boolean oldPlayerData = oldConfig.getBoolean("wipe.handlers.playerdata", true);
-             boolean oldEconomy = oldConfig.getBoolean("wipe.handlers.economy", true);
-             
-             newConfig.set("wipe.handlers.inventory", oldPlayerData ? "vanilla" : "none");
-             newConfig.set("wipe.handlers.economy", oldEconomy ? "yuemi" : "none");
-             
-             // Remove the old boolean keys from newConfig to clean up the file
-             newConfig.set("wipe.handlers.playerdata", null);
-             newConfig.set("wipe.handlers.essentials", null);
+        if (oldVersion == 2) {
+            plugin.getLogger().info("Migrating from v2 to v3: Refactoring wipe handlers to categorical strings.");
+            ConfigurationSection wipeOld = oldConfig.getConfigurationSection("wipe.handlers");
+            if (wipeOld != null) {
+                boolean playerData = wipeOld.getBoolean("playerdata", true);
+                boolean economy = wipeOld.getBoolean("economy", true);
+                boolean essentials = wipeOld.getBoolean("essentials", false);
+
+                newConfig.set("wipe.handlers.playerdata", null);
+                newConfig.set("wipe.handlers.economy", null);
+                newConfig.set("wipe.handlers.essentials", null);
+
+                newConfig.set("wipe.handlers.inventory", playerData ? "vanilla" : "none");
+
+                if (economy) {
+                    newConfig.set("wipe.handlers.economy", "yuemi");
+                } else if (essentials) {
+                    newConfig.set("wipe.handlers.economy", "essentials");
+                } else {
+                    newConfig.set("wipe.handlers.economy", "none");
+                }
+            }
+            oldVersion = 3;
+        }
+
+        if (oldVersion == 3) {
+            plugin.getLogger().info("Migrating from v3 to v4: Splitting enderchest wipe logic from inventory.");
+            String inventoryHandler = oldConfig.getString("wipe.handlers.inventory", "none");
+            newConfig.set("wipe.handlers.enderchest", inventoryHandler);
+            oldVersion = 4;
         }
 
         // 4. Save the updated config with the user's migrated values

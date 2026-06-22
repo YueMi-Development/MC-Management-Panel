@@ -9,6 +9,7 @@ import org.yuemi.management.api.wipe.WipeService;
 import org.yuemi.management.plugin.ManagementPanelPlugin;
 
 import org.yuemi.management.plugin.wipe.inventory.VanillaInventoryWipeHandler;
+import org.yuemi.management.plugin.wipe.enderchest.VanillaEnderChestWipeHandler;
 import org.yuemi.management.plugin.wipe.economy.EssentialsXEconomyWipeHandler;
 import org.yuemi.management.plugin.wipe.economy.YueMiEconomyWipeHandler;
 
@@ -33,6 +34,11 @@ public final class WipeServiceImpl implements WipeService {
         String inventoryHandler = plugin.getConfig().getString("wipe.handlers.inventory", "vanilla");
         if ("vanilla".equalsIgnoreCase(inventoryHandler)) {
             registerHandler(new VanillaInventoryWipeHandler(plugin));
+        }
+
+        String enderchestHandler = plugin.getConfig().getString("wipe.handlers.enderchest", "vanilla");
+        if ("vanilla".equalsIgnoreCase(enderchestHandler)) {
+            registerHandler(new VanillaEnderChestWipeHandler(plugin));
         }
 
         String economyHandler = plugin.getConfig().getString("wipe.handlers.economy", "yuemi");

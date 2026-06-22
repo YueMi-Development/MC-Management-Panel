@@ -52,7 +52,6 @@ public final class VanillaInventoryWipeHandler implements WipeHandler {
         org.bukkit.entity.Player p = Bukkit.getPlayer(playerId);
         if (p != null) {
             p.getInventory().clear();
-            p.getEnderChest().clear();
             p.setExp(0);
             p.setLevel(0);
             p.saveData();

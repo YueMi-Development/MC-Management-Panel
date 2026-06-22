@@ -1,5 +1,5 @@
 # Configuration version - DO NOT CHANGE THIS MANUALLY
-config-version: 3
+config-version: 4
 
 # Active handler for executing player punishments.
 # Supported values:
@@ -23,6 +23,9 @@ wipe:
   handlers:
     # Supported: "vanilla" (deletes .dat file, wiping inventory, health, location, etc.), "none"
     inventory: "vanilla"
+    
+    # Supported: "vanilla", "none"
+    enderchest: "vanilla"
     
     # Supported: "yuemi" (requires YueMiLibs), "essentials", "none"
     economy: "yuemi"
