@@ -52,7 +52,7 @@ tasks.withType<JavaCompile>().configureEach {
 tasks.jar {
     archiveBaseName.set(pluginName)
     archiveVersion.set(pluginVersion)
-    archiveClassifier.set("")
+    archiveClassifier.set("unshaded")
 
     manifest {
         attributes(

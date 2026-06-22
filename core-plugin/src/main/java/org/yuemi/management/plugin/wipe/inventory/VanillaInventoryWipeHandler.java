@@ -60,49 +60,57 @@ public final class VanillaInventoryWipeHandler implements WipeHandler {
     }
 
     @Override
-    public @NotNull CompletableFuture<Void> handleWipe(@NotNull UUID playerId, @NotNull String backupId) {
+    public @NotNull CompletableFuture<Void> createBackup(@NotNull UUID playerId, @NotNull String backupId) {
         return CompletableFuture.runAsync(() -> {
             File worldFolder = getDefaultWorldFolder();
             File playerdataFile = new File(new File(worldFolder, "playerdata"), playerId.toString() + ".dat");
             File backupDir = plugin.getWipeServiceImpl().getBackupDirectory(playerId, backupId);
 
-            try {
-                // Back up file if backup directory exists
-                if (backupDir.exists()) {
+            if (backupDir.exists()) {
+                try {
                     copyFile(playerdataFile, new File(backupDir, "playerdata.dat"));
+                } catch (IOException e) {
+                    plugin.getLogger().severe("Failed to backup vanilla inventory for " + playerId + ": " + e.getMessage());
+                    throw new RuntimeException(e);
                 }
-
-                // Delete file (Note: this deletes entire playerdata including location/health)
-                if (playerdataFile.exists()) {
-                    if (playerdataFile.delete()) {
-                        plugin.getLogger().info("Successfully deleted playerdata.dat for " + playerId);
-                    } else {
-                        plugin.getLogger().warning("Could not delete playerdata.dat file for: " + playerId + ". It may be locked or in use.");
-                    }
-                } else {
-                    plugin.getLogger().info("No playerdata.dat file found for " + playerId + " to delete.");
-                }
-            } catch (IOException e) {
-                plugin.getLogger().severe("Failed to backup/wipe vanilla inventory for " + playerId + ": " + e.getMessage());
-                throw new RuntimeException(e);
             }
         });
     }
 
     @Override
-    public @NotNull CompletableFuture<Void> handleUnwipe(@NotNull UUID playerId, @NotNull String backupId) {
+    public @NotNull CompletableFuture<Void> executeWipe(@NotNull UUID playerId) {
         return CompletableFuture.runAsync(() -> {
             File worldFolder = getDefaultWorldFolder();
             File playerdataFile = new File(new File(worldFolder, "playerdata"), playerId.toString() + ".dat");
+
+            if (playerdataFile.exists()) {
+                if (playerdataFile.delete()) {
+                    plugin.getLogger().info("Successfully deleted playerdata.dat for " + playerId);
+                } else {
+                    plugin.getLogger().warning("Could not delete playerdata.dat file for: " + playerId + ". It may be locked or in use.");
+                }
+            } else {
+                plugin.getLogger().info("No playerdata.dat file found for " + playerId + " to delete.");
+            }
+        });
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Void> executeRestore(@NotNull UUID playerId, @NotNull String backupId) {
+        return CompletableFuture.runAsync(() -> {
             File backupDir = plugin.getWipeServiceImpl().getBackupDirectory(playerId, backupId);
-            
-            if (!backupDir.exists()) {
+            File backupFile = new File(backupDir, "playerdata.dat");
+
+            if (!backupFile.exists()) {
                 return;
             }
 
+            File worldFolder = getDefaultWorldFolder();
+            File playerdataFile = new File(new File(worldFolder, "playerdata"), playerId.toString() + ".dat");
+
             try {
-                // Restore file
-                copyFile(new File(backupDir, "playerdata.dat"), playerdataFile);
+                copyFile(backupFile, playerdataFile);
+                plugin.getLogger().info("Restored playerdata for " + playerId);
             } catch (IOException e) {
                 plugin.getLogger().severe("Failed to restore vanilla inventory for " + playerId + ": " + e.getMessage());
                 throw new RuntimeException(e);

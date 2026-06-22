@@ -16,23 +16,35 @@ public interface WipeHandler {
      */
     @NotNull String getName();
 
+    /** Indicates if this handler supports creating backups. */
+    default boolean supportsBackup() { return true; }
+
+    /** Indicates if this handler supports restoring from backups. */
+    default boolean supportsRestore() { return true; }
+
     /**
-     * Performs a wipe action for the specified player.
+     * Generates a backup of the player's data.
+     * Only called if backups are enabled globally and supportsBackup() is true.
+     */
+    @NotNull CompletableFuture<Void> createBackup(@NotNull UUID playerId, @NotNull String backupId);
+
+    /**
+     * Executes the actual wipe action for the specified player.
      *
      * @param playerId the UUID of the player to wipe
-     * @param backupId the unique backup ID generated for this wipe session
      * @return a future completing when the wipe is finished
      */
-    @NotNull CompletableFuture<Void> handleWipe(@NotNull UUID playerId, @NotNull String backupId);
+    @NotNull CompletableFuture<Void> executeWipe(@NotNull UUID playerId);
 
     /**
      * Restores the wiped data for the specified player from a backup.
+     * Only called if supportsRestore() is true.
      *
      * @param playerId the UUID of the player to unwipe
      * @param backupId the unique backup ID to restore from
      * @return a future completing when the unwipe/restore is finished
      */
-    @NotNull CompletableFuture<Void> handleUnwipe(@NotNull UUID playerId, @NotNull String backupId);
+    @NotNull CompletableFuture<Void> executeRestore(@NotNull UUID playerId, @NotNull String backupId);
 
     /**
      * Optional synchronous hook called on the main thread right before the player is kicked.

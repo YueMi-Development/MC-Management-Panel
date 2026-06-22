@@ -42,7 +42,7 @@ public final class YueMiEconomyWipeHandler implements WipeHandler {
     }
 
     @Override
-    public @NotNull CompletableFuture<Void> handleWipe(@NotNull UUID playerId, @NotNull String backupId) {
+    public @NotNull CompletableFuture<Void> createBackup(@NotNull UUID playerId, @NotNull String backupId) {
         return CompletableFuture.runAsync(() -> {
             EconomyProvider econ = getEconomyProvider();
             if (econ == null) {
@@ -50,49 +50,64 @@ public final class YueMiEconomyWipeHandler implements WipeHandler {
             }
 
             OfflinePlayer op = Bukkit.getOfflinePlayer(playerId);
-            double balance = econ.getBalance(op);
 
             File backupDir = plugin.getWipeServiceImpl().getBackupDirectory(playerId, backupId);
-            File backupFile = new File(backupDir, "economy.txt");
-
-            try {
-                // Back up balance if backup dir exists
-                if (backupDir.exists()) {
-                    Files.writeString(backupFile.toPath(), String.valueOf(balance), StandardCharsets.UTF_8);
+            if (backupDir.exists()) {
+                try {
+                    double balance = econ.getBalance(op);
+                    File economyFile = new File(backupDir, "economy_yuemi.txt");
+                    Files.write(economyFile.toPath(), String.valueOf(balance).getBytes(StandardCharsets.UTF_8));
+                } catch (IOException e) {
+                    plugin.getLogger().severe("Failed to backup YueMi economy for " + playerId + ": " + e.getMessage());
+                    throw new RuntimeException(e);
                 }
-
-                // Wiping balance: set to 0.0
-                econ.setBalance(op, 0.0);
-            } catch (IOException e) {
-                plugin.getLogger().severe("Failed to backup/wipe economy balance for " + playerId + ": " + e.getMessage());
-                throw new RuntimeException(e);
             }
         });
     }
 
     @Override
-    public @NotNull CompletableFuture<Void> handleUnwipe(@NotNull UUID playerId, @NotNull String backupId) {
+    public @NotNull CompletableFuture<Void> executeWipe(@NotNull UUID playerId) {
         return CompletableFuture.runAsync(() -> {
             EconomyProvider econ = getEconomyProvider();
             if (econ == null) {
                 return;
             }
 
-            File backupDir = plugin.getWipeServiceImpl().getBackupDirectory(playerId, backupId);
-            File backupFile = new File(backupDir, "economy.txt");
+            OfflinePlayer op = Bukkit.getOfflinePlayer(playerId);
 
-            if (!backupFile.exists()) {
+            try {
+                econ.setBalance(op, 0.0);
+            } catch (Exception e) {
+                plugin.getLogger().severe("Failed to wipe YueMi economy for " + playerId + ": " + e.getMessage());
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Void> executeRestore(@NotNull UUID playerId, @NotNull String backupId) {
+        return CompletableFuture.runAsync(() -> {
+            File backupDir = plugin.getWipeServiceImpl().getBackupDirectory(playerId, backupId);
+            File economyFile = new File(backupDir, "economy_yuemi.txt");
+
+            if (!economyFile.exists()) {
                 return;
             }
 
+            EconomyProvider econ = getEconomyProvider();
+            if (econ == null) {
+                return;
+            }
+
+            OfflinePlayer op = Bukkit.getOfflinePlayer(playerId);
+
             try {
-                String content = Files.readString(backupFile.toPath(), StandardCharsets.UTF_8);
-                double balance = Double.parseDouble(content.trim());
-                OfflinePlayer op = Bukkit.getOfflinePlayer(playerId);
-                
+                String balanceStr = new String(Files.readAllBytes(economyFile.toPath()), StandardCharsets.UTF_8);
+                double balance = Double.parseDouble(balanceStr.trim());
                 econ.setBalance(op, balance);
+                plugin.getLogger().info("Restored YueMi economy for " + playerId);
             } catch (Exception e) {
-                plugin.getLogger().severe("Failed to restore economy balance for " + playerId + ": " + e.getMessage());
+                plugin.getLogger().severe("Failed to restore YueMi economy for " + playerId + ": " + e.getMessage());
                 throw new RuntimeException(e);
             }
         });

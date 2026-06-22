@@ -90,16 +90,35 @@ public final class WipeServiceImpl implements WipeService {
             // and saved the playerdata.dat file BEFORE we try to delete/backup it.
             long delay = wasOnline ? 20L : 0L;
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                // Run handlers asynchronously
-                List<CompletableFuture<Void>> futures = new ArrayList<>();
-                for (WipeHandler handler : handlers) {
-                    futures.add(handler.handleWipe(playerId, backupId));
+                boolean enableBackups = plugin.getConfig().getBoolean("wipe.enable-backups", true);
+                
+                // 1. Run Backups
+                List<CompletableFuture<Void>> backupFutures = new ArrayList<>();
+                if (enableBackups) {
+                    for (WipeHandler handler : handlers) {
+                        if (handler.supportsBackup()) {
+                            backupFutures.add(handler.createBackup(playerId, backupId));
+                        }
+                    }
                 }
 
-                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                        .thenRun(() -> future.complete(backupId))
+                CompletableFuture.allOf(backupFutures.toArray(new CompletableFuture[0]))
+                        .thenRun(() -> {
+                            // 2. Run Wipes
+                            List<CompletableFuture<Void>> wipeFutures = new ArrayList<>();
+                            for (WipeHandler handler : handlers) {
+                                wipeFutures.add(handler.executeWipe(playerId));
+                            }
+
+                            CompletableFuture.allOf(wipeFutures.toArray(new CompletableFuture[0]))
+                                    .thenRun(() -> future.complete(backupId))
+                                    .exceptionally(throwable -> {
+                                        future.completeExceptionally(throwable);
+                                        return null;
+                                    });
+                        })
                         .exceptionally(throwable -> {
-                            future.completeExceptionally(throwable);
+                            future.completeExceptionally(new RuntimeException("Backup phase failed, aborting wipe.", throwable));
                             return null;
                         });
             }, delay);
@@ -132,7 +151,9 @@ public final class WipeServiceImpl implements WipeService {
             // Run handlers to restore
             List<CompletableFuture<Void>> futures = new ArrayList<>();
             for (WipeHandler handler : handlers) {
-                futures.add(handler.handleUnwipe(playerId, finalBackupId));
+                if (handler.supportsRestore()) {
+                    futures.add(handler.executeRestore(playerId, finalBackupId));
+                }
             }
 
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))

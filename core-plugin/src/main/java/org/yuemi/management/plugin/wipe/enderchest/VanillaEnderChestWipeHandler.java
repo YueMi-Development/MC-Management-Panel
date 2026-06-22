@@ -38,37 +38,41 @@ public final class VanillaEnderChestWipeHandler implements WipeHandler {
     }
 
     @Override
-    public @NotNull CompletableFuture<Void> handleWipe(@NotNull UUID playerId, @NotNull String backupId) {
+    public @NotNull CompletableFuture<Void> createBackup(@NotNull UUID playerId, @NotNull String backupId) {
         return CompletableFuture.runAsync(() -> {
             File worldFolder = getDefaultWorldFolder();
             File playerdataFile = new File(new File(worldFolder, "playerdata"), playerId.toString() + ".dat");
             File backupDir = plugin.getWipeServiceImpl().getBackupDirectory(playerId, backupId);
 
-            try {
-                // Back up file if backup directory exists
-                // We use a different filename so we don't conflict with VanillaInventoryWipeHandler's backup.
-                if (backupDir.exists()) {
+            if (backupDir.exists()) {
+                try {
                     copyFile(playerdataFile, new File(backupDir, "playerdata_enderchest.dat"));
+                } catch (IOException e) {
+                    plugin.getLogger().severe("Failed to backup vanilla ender chest for " + playerId + ": " + e.getMessage());
+                    throw new RuntimeException(e);
                 }
-
-                // Delete file (Note: in vanilla, inventory and enderchest share the same .dat file,
-                // so this deletes the entire file, which effectively wipes both if both are offline).
-                if (playerdataFile.exists()) {
-                    if (playerdataFile.delete()) {
-                        plugin.getLogger().info("Successfully deleted playerdata.dat for " + playerId + " (EnderChest Wipe)");
-                    } else {
-                        plugin.getLogger().warning("Could not delete playerdata.dat file for: " + playerId + " (EnderChest Wipe)");
-                    }
-                }
-            } catch (IOException e) {
-                plugin.getLogger().severe("Failed to backup/wipe vanilla ender chest for " + playerId + ": " + e.getMessage());
-                throw new RuntimeException(e);
             }
         });
     }
 
     @Override
-    public @NotNull CompletableFuture<Void> handleUnwipe(@NotNull UUID playerId, @NotNull String backupId) {
+    public @NotNull CompletableFuture<Void> executeWipe(@NotNull UUID playerId) {
+        return CompletableFuture.runAsync(() -> {
+            File worldFolder = getDefaultWorldFolder();
+            File playerdataFile = new File(new File(worldFolder, "playerdata"), playerId.toString() + ".dat");
+
+            if (playerdataFile.exists()) {
+                if (playerdataFile.delete()) {
+                    plugin.getLogger().info("Successfully deleted playerdata.dat for " + playerId + " (EnderChest Wipe)");
+                } else {
+                    plugin.getLogger().warning("Could not delete playerdata.dat file for: " + playerId + " (EnderChest Wipe)");
+                }
+            }
+        });
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Void> executeRestore(@NotNull UUID playerId, @NotNull String backupId) {
         return CompletableFuture.runAsync(() -> {
             File backupDir = plugin.getWipeServiceImpl().getBackupDirectory(playerId, backupId);
             File backupFile = new File(backupDir, "playerdata_enderchest.dat");

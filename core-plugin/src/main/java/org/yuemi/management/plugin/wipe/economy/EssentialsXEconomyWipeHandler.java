@@ -29,7 +29,7 @@ public final class EssentialsXEconomyWipeHandler implements WipeHandler {
     }
 
     @Override
-    public @NotNull CompletableFuture<Void> handleWipe(@NotNull UUID playerId, @NotNull String backupId) {
+    public @NotNull CompletableFuture<Void> createBackup(@NotNull UUID playerId, @NotNull String backupId) {
         return CompletableFuture.runAsync(() -> {
             Essentials ess = (Essentials) Bukkit.getPluginManager().getPlugin("Essentials");
             if (ess == null) {
@@ -41,32 +41,52 @@ public final class EssentialsXEconomyWipeHandler implements WipeHandler {
                 return;
             }
 
-            BigDecimal balance = user.getMoney();
-
             File backupDir = plugin.getWipeServiceImpl().getBackupDirectory(playerId, backupId);
-            File backupFile = new File(backupDir, "economy_essentials.txt");
+            if (backupDir.exists()) {
+                try {
+                    BigDecimal balance = user.getMoney();
+                    File essFile = new File(backupDir, "economy_essentials.txt");
+                    Files.write(essFile.toPath(), balance.toString().getBytes(StandardCharsets.UTF_8));
+                } catch (Exception e) {
+                    plugin.getLogger().severe("Failed to backup Essentials economy for " + playerId + ": " + e.getMessage());
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
+
+    @Override
+    public @NotNull CompletableFuture<Void> executeWipe(@NotNull UUID playerId) {
+        return CompletableFuture.runAsync(() -> {
+            Essentials ess = (Essentials) Bukkit.getPluginManager().getPlugin("Essentials");
+            if (ess == null) {
+                return;
+            }
+
+            User user = ess.getUser(playerId);
+            if (user == null) {
+                return;
+            }
 
             try {
-                // Back up balance if backup dir exists
-                if (backupDir.exists()) {
-                    Files.writeString(backupFile.toPath(), balance.toString(), StandardCharsets.UTF_8);
-                }
-
-                // Wiping balance: set to 0
                 user.setMoney(BigDecimal.ZERO);
-            } catch (IOException e) {
-                plugin.getLogger().severe("Failed to backup/wipe Essentials economy balance for " + playerId + ": " + e.getMessage());
-                throw new RuntimeException(e);
             } catch (Exception e) {
-                plugin.getLogger().severe("Failed to wipe Essentials economy balance for " + playerId + ": " + e.getMessage());
+                plugin.getLogger().severe("Failed to wipe Essentials economy for " + playerId + ": " + e.getMessage());
                 throw new RuntimeException(e);
             }
         });
     }
 
     @Override
-    public @NotNull CompletableFuture<Void> handleUnwipe(@NotNull UUID playerId, @NotNull String backupId) {
+    public @NotNull CompletableFuture<Void> executeRestore(@NotNull UUID playerId, @NotNull String backupId) {
         return CompletableFuture.runAsync(() -> {
+            File backupDir = plugin.getWipeServiceImpl().getBackupDirectory(playerId, backupId);
+            File essFile = new File(backupDir, "economy_essentials.txt");
+
+            if (!essFile.exists()) {
+                return;
+            }
+
             Essentials ess = (Essentials) Bukkit.getPluginManager().getPlugin("Essentials");
             if (ess == null) {
                 return;
@@ -77,20 +97,13 @@ public final class EssentialsXEconomyWipeHandler implements WipeHandler {
                 return;
             }
 
-            File backupDir = plugin.getWipeServiceImpl().getBackupDirectory(playerId, backupId);
-            File backupFile = new File(backupDir, "economy_essentials.txt");
-
-            if (!backupFile.exists()) {
-                return;
-            }
-
             try {
-                String content = Files.readString(backupFile.toPath(), StandardCharsets.UTF_8);
-                BigDecimal balance = new BigDecimal(content.trim());
-                
+                String balanceStr = new String(Files.readAllBytes(essFile.toPath()), StandardCharsets.UTF_8);
+                BigDecimal balance = new BigDecimal(balanceStr.trim());
                 user.setMoney(balance);
+                plugin.getLogger().info("Restored Essentials economy for " + playerId);
             } catch (Exception e) {
-                plugin.getLogger().severe("Failed to restore Essentials economy balance for " + playerId + ": " + e.getMessage());
+                plugin.getLogger().severe("Failed to restore Essentials economy for " + playerId + ": " + e.getMessage());
                 throw new RuntimeException(e);
             }
         });
