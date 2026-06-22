@@ -1,8 +1,10 @@
 {
   "projectId": "x69R9Q2a",
   "loaders": [
+    "purpur",
     "paper",
-    "folia"
+    "spigot",
+    "bukkit"
   ],
   "gameVersions": [
     "1.21.8",
