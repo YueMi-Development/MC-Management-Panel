@@ -1,5 +1,15 @@
 name: '${pluginName}'
 version: '${version}'
-main: org.yuemi.Main
+main: org.yuemi.management.plugin.ManagementPanelPlugin
 authors: [${authors}]
 api-version: '${apiVersion}'
+depend: [YueMiLibs]
+softdepend: [
+    Essentials,
+    Vault
+]
+commands:
+  managementpanel:
+    description: Main command for ManagementPanel
+    aliases: [mp]
+    usage: /managementpanel help

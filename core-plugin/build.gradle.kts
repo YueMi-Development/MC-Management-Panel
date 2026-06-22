@@ -3,6 +3,12 @@ plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1" // Shadow plugin
 }
 
+repositories {
+    maven { url = uri("https://jitpack.io") }
+    maven { url = uri("https://repo.essentialsx.net/releases/") }
+}
+
+
 val pluginName: String by project
 val repoUrl: String by project
 val developerId: String by project
@@ -29,6 +35,14 @@ tasks.processResources {
 dependencies {
     implementation(project(":core-api"))
     compileOnly("io.papermc.paper:paper-api:1.21.6-R0.1-SNAPSHOT")
+    compileOnly("org.yuemi:YueMiLibs-api:1.1.0")
+    compileOnly("com.github.MilkBowl:VaultAPI:1.7.1") {
+        exclude(group = "org.bukkit", module = "bukkit")
+    }
+    compileOnly("net.essentialsx:EssentialsX:2.21.0") {
+        exclude(group = "org.bukkit", module = "bukkit")
+        exclude(group = "org.spigotmc", module = "spigot-api")
+    }
 }
 
 tasks.withType<JavaCompile>().configureEach {

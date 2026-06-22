@@ -1,0 +1,19 @@
+# Active handler for executing player punishments.
+# Supported values:
+# - "vanilla"    : Uses the standard Bukkit/Paper APIs (no support for mutes/warns)
+# - "essentials" : Delegates to EssentialsX plugin commands
+punishment-handler: "vanilla"
+
+# Wipe and backup settings
+wipe:
+  # Whether to create backups of player data before performing a wipe
+  enable-backups: true
+
+  # The directory where backups will be stored (relative to the plugin's data folder)
+  backup-directory: "backups"
+
+  # Default wipe handlers to enable/disable
+  handlers:
+    playerdata: true
+    essentials: true
+    economy: true

@@ -1,3 +1,9 @@
+repositories {
+    mavenCentral()
+    maven("https://repo.papermc.io/repository/maven-public/")
+    maven("https://repo.yuemi.my.id/repository/maven-public/")
+}
+
 subprojects {
     apply(plugin = "java")
 
@@ -18,5 +24,6 @@ subprojects {
     repositories {
         mavenCentral()
         maven("https://repo.papermc.io/repository/maven-public/")
+        maven("https://repo.yuemi.my.id/repository/maven-public/")
     }
 }
