@@ -1,4 +1,4 @@
-package org.yuemi.management.plugin.wipe;
+package org.yuemi.management.plugin.wipe.economy;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -26,7 +26,7 @@ public final class YueMiEconomyWipeHandler implements WipeHandler {
 
     @Override
     public @NotNull String getName() {
-        return "economy";
+        return "yuemi";
     }
 
     private @Nullable EconomyProvider getEconomyProvider() {

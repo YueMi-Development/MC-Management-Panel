@@ -1,4 +1,4 @@
-package org.yuemi.management.plugin.wipe;
+package org.yuemi.management.plugin.wipe.inventory;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -14,17 +14,17 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-public final class PlayerDataWipeHandler implements WipeHandler {
+public final class VanillaInventoryWipeHandler implements WipeHandler {
 
     private final ManagementPanelPlugin plugin;
 
-    public PlayerDataWipeHandler(@NotNull ManagementPanelPlugin plugin) {
+    public VanillaInventoryWipeHandler(@NotNull ManagementPanelPlugin plugin) {
         this.plugin = plugin;
     }
 
     @Override
     public @NotNull String getName() {
-        return "playerdata";
+        return "vanilla";
     }
 
     private File getDefaultWorldFolder() {
@@ -51,33 +51,21 @@ public final class PlayerDataWipeHandler implements WipeHandler {
     public @NotNull CompletableFuture<Void> handleWipe(@NotNull UUID playerId, @NotNull String backupId) {
         return CompletableFuture.runAsync(() -> {
             File worldFolder = getDefaultWorldFolder();
-            
             File playerdataFile = new File(new File(worldFolder, "playerdata"), playerId.toString() + ".dat");
-            File statsFile = new File(new File(worldFolder, "stats"), playerId.toString() + ".json");
-            File advancementsFile = new File(new File(worldFolder, "advancements"), playerId.toString() + ".json");
-
             File backupDir = plugin.getWipeServiceImpl().getBackupDirectory(playerId, backupId);
 
             try {
-                // Back up files if backup directory exists
+                // Back up file if backup directory exists
                 if (backupDir.exists()) {
                     copyFile(playerdataFile, new File(backupDir, "playerdata.dat"));
-                    copyFile(statsFile, new File(backupDir, "stats.json"));
-                    copyFile(advancementsFile, new File(backupDir, "advancements.json"));
                 }
 
-                // Delete files
+                // Delete file (Note: this deletes entire playerdata including location/health)
                 if (playerdataFile.exists() && !playerdataFile.delete()) {
                     plugin.getLogger().warning("Could not delete playerdata file for: " + playerId);
                 }
-                if (statsFile.exists() && !statsFile.delete()) {
-                    plugin.getLogger().warning("Could not delete stats file for: " + playerId);
-                }
-                if (advancementsFile.exists() && !advancementsFile.delete()) {
-                    plugin.getLogger().warning("Could not delete advancements file for: " + playerId);
-                }
             } catch (IOException e) {
-                plugin.getLogger().severe("Failed to backup/wipe player data for " + playerId + ": " + e.getMessage());
+                plugin.getLogger().severe("Failed to backup/wipe vanilla inventory for " + playerId + ": " + e.getMessage());
                 throw new RuntimeException(e);
             }
         });
@@ -87,11 +75,7 @@ public final class PlayerDataWipeHandler implements WipeHandler {
     public @NotNull CompletableFuture<Void> handleUnwipe(@NotNull UUID playerId, @NotNull String backupId) {
         return CompletableFuture.runAsync(() -> {
             File worldFolder = getDefaultWorldFolder();
-            
             File playerdataFile = new File(new File(worldFolder, "playerdata"), playerId.toString() + ".dat");
-            File statsFile = new File(new File(worldFolder, "stats"), playerId.toString() + ".json");
-            File advancementsFile = new File(new File(worldFolder, "advancements"), playerId.toString() + ".json");
-
             File backupDir = plugin.getWipeServiceImpl().getBackupDirectory(playerId, backupId);
             
             if (!backupDir.exists()) {
@@ -99,12 +83,10 @@ public final class PlayerDataWipeHandler implements WipeHandler {
             }
 
             try {
-                // Restore files
+                // Restore file
                 copyFile(new File(backupDir, "playerdata.dat"), playerdataFile);
-                copyFile(new File(backupDir, "stats.json"), statsFile);
-                copyFile(new File(backupDir, "advancements.json"), advancementsFile);
             } catch (IOException e) {
-                plugin.getLogger().severe("Failed to restore player data for " + playerId + ": " + e.getMessage());
+                plugin.getLogger().severe("Failed to restore vanilla inventory for " + playerId + ": " + e.getMessage());
                 throw new RuntimeException(e);
             }
         });

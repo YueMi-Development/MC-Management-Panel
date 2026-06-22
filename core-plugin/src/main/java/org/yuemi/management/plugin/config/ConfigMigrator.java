@@ -73,6 +73,19 @@ public final class ConfigMigrator {
                  newConfig.set("wipe.auto-wipe-on-ban", false);
              }
         }
+        
+        if (oldVersion < 3) {
+             plugin.getLogger().info("Migrating to v3: Refactoring wipe handlers to categorical strings.");
+             boolean oldPlayerData = oldConfig.getBoolean("wipe.handlers.playerdata", true);
+             boolean oldEconomy = oldConfig.getBoolean("wipe.handlers.economy", true);
+             
+             newConfig.set("wipe.handlers.inventory", oldPlayerData ? "vanilla" : "none");
+             newConfig.set("wipe.handlers.economy", oldEconomy ? "yuemi" : "none");
+             
+             // Remove the old boolean keys from newConfig to clean up the file
+             newConfig.set("wipe.handlers.playerdata", null);
+             newConfig.set("wipe.handlers.essentials", null);
+        }
 
         // 4. Save the updated config with the user's migrated values
         newConfig.set("config-version", targetVersion);

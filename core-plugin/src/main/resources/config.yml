@@ -1,5 +1,5 @@
 # Configuration version - DO NOT CHANGE THIS MANUALLY
-config-version: 2
+config-version: 3
 
 # Active handler for executing player punishments.
 # Supported values:
@@ -18,8 +18,11 @@ wipe:
   # The directory where backups will be stored (relative to the plugin's data folder)
   backup-directory: "backups"
 
-  # Default wipe handlers to enable/disable
+  # Granular controls for what should be wiped.
+  # Define which handler to use for each category. Set to "none" to disable.
   handlers:
-    playerdata: true
-    essentials: true
-    economy: true
+    # Supported: "vanilla" (deletes .dat file, wiping inventory, health, location, etc.), "none"
+    inventory: "vanilla"
+    
+    # Supported: "yuemi" (requires YueMiLibs), "essentials", "none"
+    economy: "yuemi"

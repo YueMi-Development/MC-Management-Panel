@@ -8,6 +8,10 @@ import org.yuemi.management.api.wipe.WipeHandler;
 import org.yuemi.management.api.wipe.WipeService;
 import org.yuemi.management.plugin.ManagementPanelPlugin;
 
+import org.yuemi.management.plugin.wipe.inventory.VanillaInventoryWipeHandler;
+import org.yuemi.management.plugin.wipe.economy.EssentialsXEconomyWipeHandler;
+import org.yuemi.management.plugin.wipe.economy.YueMiEconomyWipeHandler;
+
 import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -26,16 +30,16 @@ public final class WipeServiceImpl implements WipeService {
     }
 
     private void registerDefaultHandlers() {
-        if (plugin.getConfig().getBoolean("wipe.handlers.playerdata", true)) {
-            registerHandler(new PlayerDataWipeHandler(plugin));
+        String inventoryHandler = plugin.getConfig().getString("wipe.handlers.inventory", "vanilla");
+        if ("vanilla".equalsIgnoreCase(inventoryHandler)) {
+            registerHandler(new VanillaInventoryWipeHandler(plugin));
         }
-        if (plugin.getConfig().getBoolean("wipe.handlers.essentials", true) 
-                && Bukkit.getPluginManager().getPlugin("Essentials") != null) {
-            registerHandler(new EssentialsXWipeHandler(plugin));
-        }
-        if (plugin.getConfig().getBoolean("wipe.handlers.economy", true)
-                && Bukkit.getPluginManager().getPlugin("YueMiLibs") != null) {
+
+        String economyHandler = plugin.getConfig().getString("wipe.handlers.economy", "yuemi");
+        if ("yuemi".equalsIgnoreCase(economyHandler) && Bukkit.getPluginManager().getPlugin("YueMiLibs") != null) {
             registerHandler(new YueMiEconomyWipeHandler(plugin));
+        } else if ("essentials".equalsIgnoreCase(economyHandler) && Bukkit.getPluginManager().getPlugin("Essentials") != null) {
+            registerHandler(new EssentialsXEconomyWipeHandler(plugin));
         }
     }
 
