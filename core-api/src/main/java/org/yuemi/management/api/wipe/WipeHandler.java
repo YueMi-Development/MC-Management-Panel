@@ -16,15 +16,27 @@ public interface WipeHandler {
      */
     @NotNull String getName();
 
-    /** Indicates if this handler supports creating backups. */
+    /** 
+     * Indicates if this handler supports creating backups. 
+     * 
+     * @return true if backups are supported, false otherwise
+     */
     default boolean supportsBackup() { return true; }
 
-    /** Indicates if this handler supports restoring from backups. */
+    /** 
+     * Indicates if this handler supports restoring from backups. 
+     * 
+     * @return true if restores are supported, false otherwise
+     */
     default boolean supportsRestore() { return true; }
 
     /**
      * Generates a backup of the player's data.
      * Only called if backups are enabled globally and supportsBackup() is true.
+     *
+     * @param playerId the UUID of the player to backup
+     * @param backupId the unique backup ID for this session
+     * @return a future completing when the backup is finished
      */
     @NotNull CompletableFuture<Void> createBackup(@NotNull UUID playerId, @NotNull String backupId);
 
