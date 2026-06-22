@@ -72,26 +72,13 @@ public final class VanillaEnderChestWipeHandler implements WipeHandler {
     }
 
     @Override
+    public boolean supportsRestore() {
+        return false;
+    }
+
+    @Override
     public @NotNull CompletableFuture<Void> executeRestore(@NotNull UUID playerId, @NotNull String backupId) {
-        return CompletableFuture.runAsync(() -> {
-            File backupDir = plugin.getWipeServiceImpl().getBackupDirectory(playerId, backupId);
-            File backupFile = new File(backupDir, "playerdata_enderchest.dat");
-
-            if (!backupFile.exists()) {
-                return; // Nothing to restore for ender chest
-            }
-
-            File worldFolder = getDefaultWorldFolder();
-            File playerdataFile = new File(new File(worldFolder, "playerdata"), playerId.toString() + ".dat");
-
-            try {
-                copyFile(backupFile, playerdataFile);
-                plugin.getLogger().info("Restored playerdata (ender chest) for " + playerId);
-            } catch (IOException e) {
-                plugin.getLogger().severe("Failed to restore vanilla ender chest for " + playerId + ": " + e.getMessage());
-                throw new RuntimeException(e);
-            }
-        });
+        return CompletableFuture.completedFuture(null);
     }
 
     private File getDefaultWorldFolder() {
