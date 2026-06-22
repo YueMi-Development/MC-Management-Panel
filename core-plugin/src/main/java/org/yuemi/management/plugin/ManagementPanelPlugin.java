@@ -7,6 +7,7 @@ import org.yuemi.management.api.ManagementPanelProvider;
 import org.yuemi.management.plugin.command.ManagementPanelCommand;
 import org.yuemi.management.plugin.punishment.PunishmentServiceImpl;
 import org.yuemi.management.plugin.wipe.WipeServiceImpl;
+import org.yuemi.management.plugin.config.ConfigManager;
 
 import java.util.logging.Level;
 
@@ -16,10 +17,12 @@ public final class ManagementPanelPlugin extends JavaPlugin {
     private PunishmentServiceImpl punishmentService;
     private WipeServiceImpl wipeService;
 
+    private ConfigManager configManager;
+
     @Override
     public void onEnable() {
-        // Save default config.yml if it doesn't exist
-        saveDefaultConfig();
+        // Initialize Configuration and run migrations if necessary
+        this.configManager = new ConfigManager(this);
 
         // Initialize Services
         this.punishmentService = new PunishmentServiceImpl(this);

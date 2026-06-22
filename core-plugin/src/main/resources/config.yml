@@ -1,3 +1,6 @@
+# Configuration version - DO NOT CHANGE THIS MANUALLY
+config-version: 1
+
 # Active handler for executing player punishments.
 # Supported values:
 # - "vanilla"    : Uses the standard Bukkit/Paper APIs (no support for mutes/warns)
