@@ -210,8 +210,28 @@ public final class ManagementPanelCommand implements CommandExecutor, TabComplet
 
     @SuppressWarnings("deprecation")
     private void handlePunishment(CommandSender sender, String[] args, String type) {
-        String targetName = args[1];
         String sourceName = sender.getName();
+
+        Set<String> flags = new HashSet<>();
+        List<String> cleanArgsList = new ArrayList<>();
+        cleanArgsList.add(args[0]); // subcommand
+        for (int i = 1; i < args.length; i++) {
+            if (args[i].startsWith("--")) {
+                flags.add(args[i].toLowerCase());
+            } else {
+                cleanArgsList.add(args[i]);
+            }
+        }
+        String[] cleanArgs = cleanArgsList.toArray(new String[0]);
+
+        if (cleanArgs.length < 2) {
+            sendMsg(sender, "Target player not specified.", NamedTextColor.RED);
+            return;
+        }
+
+        String targetName = cleanArgs[1];
+        final boolean finalWipeFlag = flags.contains("--wipe");
+        final boolean finalNoWipeFlag = flags.contains("--nowipe");
 
         CompletableFuture.runAsync(() -> {
             OfflinePlayer op = Bukkit.getOfflinePlayer(targetName);
@@ -221,24 +241,22 @@ public final class ManagementPanelCommand implements CommandExecutor, TabComplet
             String reason = null;
 
             if (type.equals("ban") || type.equals("mute")) {
-                if (args.length >= 3) {
-                    duration = parseDuration(args[2]);
+                if (cleanArgs.length >= 3) {
+                    duration = parseDuration(cleanArgs[2]);
                     if (duration != null) {
-                        // args[2] was a duration, reason starts at args[3]
-                        if (args.length >= 4) {
-                            reason = joinArgs(args, 3);
+                        if (cleanArgs.length >= 4) {
+                            reason = joinArgs(cleanArgs, 3);
                         }
                     } else {
-                        // args[2] was not a duration, assume it is part of reason
-                        reason = joinArgs(args, 2);
+                        reason = joinArgs(cleanArgs, 2);
                     }
                 }
             } else if (type.equals("unban") || type.equals("unmute") || type.equals("kick")) {
-                if (args.length >= 3) {
-                    reason = joinArgs(args, 2);
+                if (cleanArgs.length >= 3) {
+                    reason = joinArgs(cleanArgs, 2);
                 }
             } else if (type.equals("warn")) {
-                reason = joinArgs(args, 2);
+                reason = joinArgs(cleanArgs, 2);
             }
 
             CompletableFuture<PunishmentResult> future;
@@ -260,6 +278,27 @@ public final class ManagementPanelCommand implements CommandExecutor, TabComplet
             future.thenAccept(result -> {
                 if (result.success()) {
                     sendMsg(sender, result.message(), NamedTextColor.GREEN);
+
+                    // Auto-wipe logic for bans
+                    if (type.equals("ban")) {
+                        boolean autoWipe = plugin.getConfig().getBoolean("wipe.auto-wipe-on-ban", false);
+                        boolean shouldWipe = false;
+                        if (finalWipeFlag) {
+                            shouldWipe = true;
+                        } else if (!finalNoWipeFlag && autoWipe) {
+                            shouldWipe = true;
+                        }
+
+                        if (shouldWipe) {
+                            sendMsg(sender, "Auto-wiping " + targetName + "...", NamedTextColor.YELLOW);
+                            plugin.getWipeServiceImpl().wipe(uuid)
+                                    .thenAccept(backupId -> sendMsg(sender, "Successfully wiped " + targetName + ". Backup created: " + backupId, NamedTextColor.GREEN))
+                                    .exceptionally(t -> {
+                                        sendMsg(sender, "Failed to auto-wipe player " + targetName + ": " + t.getCause().getMessage(), NamedTextColor.RED);
+                                        return null;
+                                    });
+                        }
+                    }
                 } else {
                     sendMsg(sender, "Failed: " + result.message(), NamedTextColor.RED);
                 }
@@ -319,13 +358,25 @@ public final class ManagementPanelCommand implements CommandExecutor, TabComplet
             }
         }
 
-        if (args.length == 3) {
+        if (args.length >= 3) {
             String sub = args[0].toLowerCase();
-            if (sub.equals("ban") || sub.equals("mute")) {
-                List<String> times = List.of("30m", "1h", "12h", "1d", "7d", "30d");
-                return times.stream()
-                        .filter(t -> t.startsWith(args[2].toLowerCase()))
+            if (sub.equals("ban")) {
+                List<String> suggestions = new ArrayList<>();
+                if (args.length == 3) {
+                    suggestions.addAll(List.of("30m", "1h", "12h", "1d", "7d", "30d"));
+                }
+                suggestions.add("--wipe");
+                suggestions.add("--nowipe");
+                
+                return suggestions.stream()
+                        .filter(t -> t.startsWith(args[args.length - 1].toLowerCase()))
                         .collect(Collectors.toList());
+            } else if (sub.equals("mute")) {
+                if (args.length == 3) {
+                    return List.of("30m", "1h", "12h", "1d", "7d", "30d").stream()
+                            .filter(t -> t.startsWith(args[2].toLowerCase()))
+                            .collect(Collectors.toList());
+                }
             }
         }
 

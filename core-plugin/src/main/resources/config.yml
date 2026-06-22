@@ -1,5 +1,5 @@
 # Configuration version - DO NOT CHANGE THIS MANUALLY
-config-version: 1
+config-version: 2
 
 # Active handler for executing player punishments.
 # Supported values:
@@ -9,6 +9,9 @@ punishment-handler: "vanilla"
 
 # Wipe and backup settings
 wipe:
+  # Whether players should be automatically wiped when banned
+  auto-wipe-on-ban: false
+
   # Whether to create backups of player data before performing a wipe
   enable-backups: true
 

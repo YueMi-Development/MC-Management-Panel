@@ -66,12 +66,13 @@ public final class ConfigMigrator {
             }
         }
 
-        // Apply version-specific migrations here if needed in the future
-        /*
+        // Apply version-specific migrations here
         if (oldVersion == 1) {
-             // migrate from v1 to v2 logic
+             plugin.getLogger().info("Migrating from v1 to v2: Added 'wipe.auto-wipe-on-ban' setting.");
+             if (!oldConfig.contains("wipe.auto-wipe-on-ban")) {
+                 newConfig.set("wipe.auto-wipe-on-ban", false);
+             }
         }
-        */
 
         // 4. Save the updated config with the user's migrated values
         newConfig.set("config-version", targetVersion);

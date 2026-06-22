@@ -7,7 +7,7 @@ import org.yuemi.management.plugin.ManagementPanelPlugin;
 public final class ConfigManager {
 
     private final ManagementPanelPlugin plugin;
-    public static final int CURRENT_VERSION = 1;
+    public static final int CURRENT_VERSION = 2;
 
     public ConfigManager(@NotNull ManagementPanelPlugin plugin) {
         this.plugin = plugin;
