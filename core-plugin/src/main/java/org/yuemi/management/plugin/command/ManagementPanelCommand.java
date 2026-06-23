@@ -57,7 +57,16 @@ public final class ManagementPanelCommand implements CommandExecutor, TabComplet
         SubCommand subCommand = subCommands.get(subName);
 
         if (subCommand == null) {
-            CommandHelper.sendMsg(sender, "Unknown subcommand. Use /mp help.", NamedTextColor.RED);
+            if (sender instanceof org.bukkit.entity.Player player) {
+                if (CommandHelper.hasPermission(sender, "gui")) {
+                    org.bukkit.OfflinePlayer target = org.bukkit.Bukkit.getOfflinePlayer(args[0]);
+                    if (target.hasPlayedBefore() || target.isOnline()) {
+                        new org.yuemi.management.plugin.gui.PlayerActionGui(plugin).open(player, target);
+                        return true;
+                    }
+                }
+            }
+            CommandHelper.sendMsg(sender, "Unknown subcommand or player not found. Use /mp help.", NamedTextColor.RED);
             return true;
         }
 
@@ -78,13 +87,21 @@ public final class ManagementPanelCommand implements CommandExecutor, TabComplet
             @NotNull String[] args
     ) {
         if (args.length == 1) {
-            return subCommands.keySet().stream()
+            java.util.List<String> suggestions = new java.util.ArrayList<>(subCommands.keySet().stream()
                     .filter(name -> name.startsWith(args[0].toLowerCase()))
                     .filter(name -> {
                         SubCommand sub = subCommands.get(name);
                         return sub != null && CommandHelper.hasPermission(sender, sub.getPermission());
                     })
-                    .toList();
+                    .toList());
+
+            if (sender instanceof org.bukkit.entity.Player && CommandHelper.hasPermission(sender, "gui")) {
+                org.bukkit.Bukkit.getOnlinePlayers().stream()
+                        .map(org.bukkit.entity.Player::getName)
+                        .filter(name -> name.toLowerCase().startsWith(args[0].toLowerCase()))
+                        .forEach(suggestions::add);
+            }
+            return suggestions;
         }
 
         String subName = args[0].toLowerCase();

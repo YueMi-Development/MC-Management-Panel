@@ -31,6 +31,8 @@ public class HelpCommand implements SubCommand {
     @Override
     public void execute(@NotNull CommandSender sender, @NotNull String[] args) {
         sender.sendMessage(Component.text("=== Management Panel Help ===", NamedTextColor.DARK_GREEN));
+        sender.sendMessage(Component.text("/mp gui - Open the main management panel GUI", NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text("/mp <player> - Open actions GUI for a specific player", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text("/mp wipe <player> - Full player data wipe (creates backup)", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text("/mp unwipe <player> [backupId] - Restore player data from backup", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text("/mp ban <player> [duration] [reason] [--wipe|--nowipe] - Ban player", NamedTextColor.YELLOW));
