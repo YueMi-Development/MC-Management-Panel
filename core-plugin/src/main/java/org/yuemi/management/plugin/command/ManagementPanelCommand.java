@@ -57,13 +57,18 @@ public final class ManagementPanelCommand implements CommandExecutor, TabComplet
         SubCommand subCommand = subCommands.get(subName);
 
         if (subCommand == null) {
-            if (sender instanceof org.bukkit.entity.Player player) {
+            org.bukkit.OfflinePlayer target = org.bukkit.Bukkit.getOfflinePlayer(args[0]);
+            if (target.hasPlayedBefore() || target.isOnline()) {
+                if (!(sender instanceof org.bukkit.entity.Player player)) {
+                    CommandHelper.sendMsg(sender, "Only players can open the GUI.", NamedTextColor.RED);
+                    return true;
+                }
                 if (CommandHelper.hasPermission(sender, "gui")) {
-                    org.bukkit.OfflinePlayer target = org.bukkit.Bukkit.getOfflinePlayer(args[0]);
-                    if (target.hasPlayedBefore() || target.isOnline()) {
-                        new org.yuemi.management.plugin.gui.PlayerActionGui(plugin).open(player, target);
-                        return true;
-                    }
+                    new org.yuemi.management.plugin.gui.PlayerActionGui(plugin).open(player, target);
+                    return true;
+                } else {
+                    CommandHelper.sendMsg(sender, "You do not have permission to run this command.", NamedTextColor.RED);
+                    return true;
                 }
             }
             CommandHelper.sendMsg(sender, "Unknown subcommand or player not found. Use /mp help.", NamedTextColor.RED);
