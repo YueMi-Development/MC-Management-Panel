@@ -15,6 +15,8 @@ val developerId: String by project
 val developerName: String by project
 val apiVersion: String by project
 val authors: String by project
+val yuemiLibsVersion: String by project
+val paperApiVersion: String by project
 val pluginVersion: String = project.version.toString()
 
 tasks.processResources {
@@ -34,8 +36,8 @@ tasks.processResources {
 
 dependencies {
     implementation(project(":core-api"))
-    compileOnly("io.papermc.paper:paper-api:1.21.6-R0.1-SNAPSHOT")
-    compileOnly("org.yuemi:YueMiLibs-api:2.0.0")
+    compileOnly("io.papermc.paper:paper-api:$paperApiVersion")
+    compileOnly("org.yuemi:YueMiLibs-api:$yuemiLibsVersion")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7.1") {
         exclude(group = "org.bukkit", module = "bukkit")
     }
