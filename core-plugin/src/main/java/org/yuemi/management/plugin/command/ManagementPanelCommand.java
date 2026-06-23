@@ -38,6 +38,7 @@ public final class ManagementPanelCommand implements CommandExecutor, TabComplet
         subCommands.put("unmute", new UnmuteCommand(plugin));
         subCommands.put("kick", new KickCommand(plugin));
         subCommands.put("warn", new WarnCommand(plugin));
+        subCommands.put("gui", new GuiCommand(plugin));
     }
 
     @Override
