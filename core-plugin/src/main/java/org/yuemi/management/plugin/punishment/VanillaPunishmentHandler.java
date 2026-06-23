@@ -127,4 +127,21 @@ public final class VanillaPunishmentHandler implements PunishmentHandler {
                 PunishmentResult.failure("Warnings are not supported by the Vanilla punishment system.")
         );
     }
+
+    @Override
+    public boolean isBanned(@NotNull UUID playerId) {
+        try {
+            org.bukkit.profile.PlayerProfile profile = Bukkit.createProfile(playerId);
+            @SuppressWarnings("unchecked")
+            BanList<org.bukkit.profile.PlayerProfile> banList = (BanList<org.bukkit.profile.PlayerProfile>) Bukkit.getBanList(BanList.Type.PROFILE);
+            return banList.isBanned(profile);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isMuted(@NotNull UUID playerId) {
+        return false;
+    }
 }

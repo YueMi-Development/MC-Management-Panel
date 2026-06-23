@@ -112,4 +112,20 @@ public interface PunishmentService {
      * @param handler the new punishment handler
      */
     void setActiveHandler(@NotNull PunishmentHandler handler);
+
+    /**
+     * Checks if a player is currently banned.
+     *
+     * @param playerId the player UUID
+     * @return true if the player is banned, false otherwise
+     */
+    boolean isBanned(@NotNull UUID playerId);
+
+    /**
+     * Checks if a player is currently muted.
+     *
+     * @param playerId the player UUID
+     * @return true if the player is muted, false otherwise
+     */
+    boolean isMuted(@NotNull UUID playerId);
 }

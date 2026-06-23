@@ -136,4 +136,30 @@ public final class EssentialsXPunishmentHandler implements PunishmentHandler {
         String target = getTargetIdentifier(playerId);
         return executeConsoleCommand("warn " + target + " " + reason);
     }
+
+    @Override
+    public boolean isBanned(@NotNull UUID playerId) {
+        try {
+            org.bukkit.profile.PlayerProfile profile = Bukkit.createProfile(playerId);
+            @SuppressWarnings("unchecked")
+            org.bukkit.BanList<org.bukkit.profile.PlayerProfile> banList = (org.bukkit.BanList<org.bukkit.profile.PlayerProfile>) Bukkit.getBanList(org.bukkit.BanList.Type.PROFILE);
+            return banList.isBanned(profile);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isMuted(@NotNull UUID playerId) {
+        try {
+            var essPlugin = Bukkit.getPluginManager().getPlugin("Essentials");
+            if (essPlugin instanceof com.earth2me.essentials.Essentials ess) {
+                com.earth2me.essentials.User user = ess.getUser(playerId);
+                return user != null && user.isMuted();
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+        return false;
+    }
 }

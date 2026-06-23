@@ -66,6 +66,28 @@ public abstract class PunishmentCommand implements SubCommand {
             OfflinePlayer op = Bukkit.getOfflinePlayer(targetName);
             UUID uuid = op.getUniqueId();
 
+            if (getName().equalsIgnoreCase("ban")) {
+                if (plugin.getPunishmentServiceImpl().isBanned(uuid)) {
+                    CommandHelper.sendMsg(sender, targetName + " is already banned.", NamedTextColor.RED);
+                    return;
+                }
+            } else if (getName().equalsIgnoreCase("unban")) {
+                if (!plugin.getPunishmentServiceImpl().isBanned(uuid)) {
+                    CommandHelper.sendMsg(sender, targetName + " is not banned.", NamedTextColor.RED);
+                    return;
+                }
+            } else if (getName().equalsIgnoreCase("mute")) {
+                if (plugin.getPunishmentServiceImpl().isMuted(uuid)) {
+                    CommandHelper.sendMsg(sender, targetName + " is already muted.", NamedTextColor.RED);
+                    return;
+                }
+            } else if (getName().equalsIgnoreCase("unmute")) {
+                if (!plugin.getPunishmentServiceImpl().isMuted(uuid)) {
+                    CommandHelper.sendMsg(sender, targetName + " is not muted.", NamedTextColor.RED);
+                    return;
+                }
+            }
+
             Duration duration = null;
             String reason = null;
 

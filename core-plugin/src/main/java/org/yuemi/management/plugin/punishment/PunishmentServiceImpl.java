@@ -124,4 +124,14 @@ public final class PunishmentServiceImpl implements PunishmentService {
         this.activeHandler = handler;
         plugin.getLogger().info("Active punishment handler overridden to: " + handler.getName());
     }
+
+    @Override
+    public boolean isBanned(@NotNull UUID playerId) {
+        return activeHandler.isBanned(playerId);
+    }
+
+    @Override
+    public boolean isMuted(@NotNull UUID playerId) {
+        return activeHandler.isMuted(playerId);
+    }
 }
